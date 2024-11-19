@@ -1,6 +1,4 @@
 package com.springmvc.G4_project.model;
-
-
 import java.util.Date;
 
 import javax.annotation.Generated;

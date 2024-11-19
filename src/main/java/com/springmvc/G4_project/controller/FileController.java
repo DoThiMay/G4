@@ -3,6 +3,9 @@ package com.springmvc.G4_project.controller;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.security.Principal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -11,42 +14,90 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.repository.query.Param;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.springmvc.G4_project.model.Comment;
+import com.springmvc.G4_project.model.CommentDTO;
 import com.springmvc.G4_project.model.Document;
+import com.springmvc.G4_project.model.User;
+import com.springmvc.G4_project.responsitories.CommentRespository;
 import com.springmvc.G4_project.responsitories.DocumentRespository;
+import com.springmvc.G4_project.responsitories.UserRespository;
 
 @Controller
 
 public class FileController {
     @Autowired
     DocumentRespository repo;
+    @Autowired
+    CommentRespository comrepo;
+    @Autowired
+    UserRespository userrepo;
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public String file(ModelMap modelMap) {
         List<Document> listDocs = repo.findAll();
         modelMap.addAttribute("listDocs", listDocs);
         return "test-upload1";
-
+    }
+    @GetMapping("/lienhe")
+    public String lienhe() {
+        return "lienhe";  // Tên của file JSP sẽ là admin.jsp
+    }
+    
+    @RequestMapping(value = "/manageDocument", method = RequestMethod.GET)
+    public String manageDocument(ModelMap modelMap) {
+        List<Document> listDocs = repo.findAll();
+        modelMap.addAttribute("listDocs", listDocs);
+        return "manageDocument";
     }
     
     @RequestMapping(value = "/details", method = RequestMethod.GET)
-    public String showDocumentDetails(@RequestParam("id") Long id, ModelMap modelMap) {
+    public String showDocumentDetails(@RequestParam("id") Long id, ModelMap modelMap, Principal principal) {
         modelMap.addAttribute("docId", id); // Truyền id tài liệu cho JSP để sử dụng trong iframe
+
+        modelMap.addAttribute("username", principal.getName());
         return "viewDocumentLink"; // Tên của file JSP
     }
+    
+    @RequestMapping(value = "/details1", method = RequestMethod.GET)
+    @ResponseBody
+    public List<CommentDTO> showDocumentDetails1(@RequestParam("id") Long id, ModelMap modelMap) {
+        List<Comment> commentList = comrepo.findByDocumentId(id);
+        List<CommentDTO> commentDtoList = new ArrayList();
+        for (Comment commentItem : commentList) {
+            CommentDTO commentDtoItem = new CommentDTO();
+            commentDtoItem.setId(commentItem.getId());
+            commentDtoItem.setContent(commentItem.getContent());
+            commentDtoItem.setDocument_id(id);
+            commentDtoItem.setCreated_at(commentItem.getCreated_at());
+            commentDtoItem.setUser_name(commentItem.getUser_name());
+            commentDtoList.add(commentDtoItem);
+        }
+         //modelMap.addAttribute("commentDtoList", commentDtoList);
 
-
-
+        return commentDtoList;
+    }
+    @RequestMapping(value = "/comment", method = RequestMethod.POST)
+    public ResponseEntity<String> Comment(@RequestBody Comment comment){
+        comment.setCreated_at(new Date());
+        comrepo.save(comment);
+        return ResponseEntity.ok("Data received successfully"); 
+    }
     @RequestMapping(value = "/view", method = RequestMethod.GET)
     public void viewDocument(@RequestParam("id") Long id, HttpServletResponse response) throws Exception {
         Optional<Document> result = repo.findById(id);
@@ -107,8 +158,7 @@ public class FileController {
 
     @RequestMapping(value = "/upload", method = RequestMethod.POST)
     public String uploadFile(@RequestParam("document") MultipartFile multipartFile,
-            @RequestParam("linhvuc") String linhvuc, 
-            @RequestParam("description") String description, 
+            @RequestParam("linhvuc") String linhvuc, @RequestParam("description") String description,
             RedirectAttributes ra) throws IOException {
         String fileName = StringUtils.cleanPath(multipartFile.getOriginalFilename());
 
@@ -135,7 +185,7 @@ public class FileController {
 
         repo.save(document);
         ra.addFlashAttribute("message", "The file has been uploaded successfully!");
-        return "redirect:/";
+        return "redirect:/search";
     }
 
     @RequestMapping(value = "/download", method = RequestMethod.GET)
@@ -199,4 +249,71 @@ public class FileController {
             throw new Exception("Error reading file: " + filePath, e);
         }
     }
+
+    @RequestMapping(value = "/search", method = RequestMethod.GET)
+    public String searchDocuments(@RequestParam(name = "query", required = false, defaultValue = "") String query,
+            Model model) {
+        List<Document> documents;
+
+        if (query != null && !query.isEmpty()) {
+            // Tìm kiếm tài liệu theo tên nếu có query
+            documents = repo.findByNameContaining(query);
+        } else {
+            // Nếu không có query, trả về tất cả tài liệu
+            documents = repo.findAll();
+        }
+        model.addAttribute("documents", documents); // Truyền danh sách tài liệu tìm được vào model
+        model.addAttribute("query", query); // Truyền từ khóa tìm kiếm vào model
+        return "search";
+    }
+    @RequestMapping(value = "/updateDocument/{id}", method = RequestMethod.GET)
+    public String showEditForm(@PathVariable("id") Long id, Model model) {
+        // Lấy tài liệu từ cơ sở dữ liệu
+        Optional<Document> documentOptional = repo.findById(id);
+        if (!documentOptional.isPresent()) {
+            return "redirect:/manageDocument";  // Nếu không tìm thấy tài liệu, quay lại trang quản lý
+        }
+        Document document = documentOptional.get();
+        model.addAttribute("document", document);
+        return "editDocument";  // Chuyển tới JSP/HTML để sửa tài liệu
+    }
+    @RequestMapping(value = "/updateDocument/{id}", method = RequestMethod.POST)
+    public String updateDocument(@ModelAttribute Document document, RedirectAttributes redirectAttributes) {
+        // Cập nhật thông tin tài liệu
+        Document existingDocument = repo.findById(document.getId()).orElseThrow(() -> new RuntimeException("Document not found"));
+        
+        existingDocument.setLinhvuc(document.getLinhvuc());
+        existingDocument.setDescription(document.getDescription());
+
+        // Lưu tài liệu đã sửa
+        repo.save(existingDocument);
+
+        redirectAttributes.addFlashAttribute("message", "Document updated successfully!");
+        return "redirect:/manageDocument";  // Chuyển hướng về trang quản lý tài liệu
+    }
+    
+    @RequestMapping(value = "/deleteDocument", method = RequestMethod.POST)
+    public String deleteDocument(@RequestParam("id") Long id, RedirectAttributes ra) {
+        Optional<Document> documentOptional = repo.findById(id);
+        if (documentOptional.isPresent()) {
+            Document document = documentOptional.get();
+
+            // Xóa tất cả các bình luận liên quan đến tài liệu
+            comrepo.deleteByDocumentId(id);
+
+            // Xóa tài liệu khỏi hệ thống
+            repo.delete(document);
+
+            // Thông báo cho người dùng rằng tài liệu đã được xóa thành công
+            ra.addFlashAttribute("message", "Document and associated comments have been deleted successfully!");
+        } else {
+            // Nếu tài liệu không tồn tại, thông báo lỗi
+            ra.addFlashAttribute("error", "Document not found!");
+        }
+
+        // Sau khi xóa, điều hướng lại đến trang quản lý tài liệu
+        return "redirect:/manageDocument";
+    }
+    
+
 }

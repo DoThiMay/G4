@@ -1,49 +1,132 @@
-<%@ page contentType="text/html; charset=UTF-8" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en">
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <head>
-     <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Document Manager</title>
-    <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/css/bootstrap.min.css" />
-    <title>Đăng tài liệu</title>
+    <%@ page pageEncoding="UTF-8" %>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <title>Đăng Nhập</title>
+    <link rel="stylesheet" href="/webjars/bootstrap/css/bootstrap.min.css" />
     <style>
-        h1 {
-            text-align: center;
-            color: black;
-            font-size: 36px;
-        }
-
         body {
-            font-family: 'Times New Roman', Times, serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6a89cc, #b8e994);
+            color: #333;
+            margin: 0;
+            padding: 0;
         }
 
         .container {
-            max-width: 600px;
-            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 10px;
+            max-width: 400px;
+            margin: 50px auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px 30px;
+        }
+
+        h3 {
             text-align: center;
-            padding: 20px;
-            border-radius: 8px;
+            font-size: 28px;
+            color: #34495e;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
         }
 
         input, textarea, select {
-            width: 100%;
+            border: 1px solid #ced4da;
             padding: 10px;
-            font-size: 14px;
-            border: 1px solid #cccccc;
-            border-radius: 4px;
-            margin-bottom: 15px;
+            font-size: 16px;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+
+        .btn {
+            background: #2ecc71;
+            color: white;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: #27ae60;
+        }
+
+        .error {
+            color: red;
+            font-size: 12px;
+            margin-top: -10px;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: center;
+            padding: 15px 0;
+            background-color: #34495e;
+        }
+
+        .navbar ul {
+            display: flex;
+            list-style: none;
+        }
+
+        .navbar ul li a {
+            color: #ecf0f1;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+
+        .navbar ul li a:hover {
+            color: #1abc9c;
         }
     </style>
 </head>
 <body>
-    <img src="https://cdn.prod.website-files.com/62045da4270c887c4de9c45f/6206f72af2bab0767eeb1690_digitaldocument.jpeg" width="100%">
-    
-    <div class="container">
-        <h1><b>Đăng tài liệu</b></h1>
-        
-          <form action="/upload" method="POST" enctype="multipart/form-data" accept-charset="UTF-8" style="max-width: 600px; margin: 0 auto">
+<header>
+    <div class="navbar">
+        <ul>
+            <li><a href="/">Trang chủ</a></li>
+            <li><a href="./About.html">Về chúng tôi</a></li>
+            <li><a href="/search">Tài liệu</a></li>
+            <li><a href="/upload">Đăng tải tài liệu</a></li>
+            <c:choose>
+                <c:when test="${empty myDbValues}">
+                    <li><a href="/dangnhap">Đăng nhập</a></li>
+                    <li><a href="/trang-chu/dangky">Đăng ký</a></li>
+                </c:when>
+                <c:otherwise>
+                    <li><a>${myDbValues}</a></li>
+                    <li><a href="/logout">Đăng xuất</a></li>
+                </c:otherwise>
+            </c:choose>
+        </ul>
+    </div>
+</header>
+<div class="container">
+    <h3><b>Đăng tài liệu</b></h3>
+        <form action="/upload" method="POST" enctype="multipart/form-data" accept-charset="UTF-8" style="max-width: 600px; margin: 0 auto">
        <p>
                     <label for="description">Mô Tả:</label> 
                     <input type="text" class="form-control" placeholder="Mô tả" name="description" required />
@@ -74,6 +157,7 @@
                     <input type="submit" value="Upload" class="btn btn-primary" />
                 </p>
         </form>
-    </div>
+</div>
 </body>
 </html>
+

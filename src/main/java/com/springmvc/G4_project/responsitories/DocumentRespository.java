@@ -14,4 +14,7 @@ public interface DocumentRespository extends JpaRepository<Document, Long>{
 //    List<Document> findAll();
     @Query(value ="SELECT * FROM Document1 d ORDER BY d.uploadTime DESC", nativeQuery = true)
     List<Document> findAllDocumentProjections();
+    
+    @Query(value ="SELECT * FROM Document1 d WHERE d.Name LIKE %?1% OR d.linhvuc LIKE %?1% OR d.description LIKE %?1%", nativeQuery = true)
+    List<Document> findByNameContaining(String query);
 }
